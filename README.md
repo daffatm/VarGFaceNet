@@ -6,3 +6,5 @@ Pytorch implentation of VarGFaceNet, reimplented from the official MXNet Code, s
 
 ## Reference
 - https://github.com/zma-c-137/VarGFaceNet
+- https://github.com/enquan/VarGFaceNet_Pytorch
+- https://github.com/mbfaria/ShuffleFaceNet_Pytorch
