@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     # define model
     print('defining vargfacenet model...')
-    net = model.VarGFaceNet(num_classes=trainset.class_nums)
+    net = model.VarGFaceNet()
 
     if RESUME:
         ckpt = torch.load(RESUME)
