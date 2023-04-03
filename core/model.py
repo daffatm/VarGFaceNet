@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from torchsummary import summary
+# from torchsummary import summary
 
 '''
 求Input的二范数，为其输入除以其模长
@@ -189,14 +189,14 @@ class VarGFaceNet(nn.Module):
             NormalBlock(160, 3, 1),
             NormalBlock(160, 3, 1),
             NormalBlock(160, 3, 1),
-            NormalBlock(160, 3, 1),
+            NormalBlock(160, 3, 1)
         )
 
         self.stage4 = nn.Sequential(
             DownSampling(160, 3, 2),
             NormalBlock(320, 3, 1),
             NormalBlock(320, 3, 1),
-            NormalBlock(320, 3, 1),
+            NormalBlock(320, 3, 1)
         )
 
         self.embedding = Embedding(320, num_classes)
@@ -209,7 +209,9 @@ class VarGFaceNet(nn.Module):
         x = self.stage4(x)
 
         out = self.embedding(x)
-        return out
+        norm = torch.norm(out, 2, 1, True)
+        output = torch.div(out, norm)
+        return output, norm
 
 if __name__ == "__main__":
     # input = Variable(torch.FloatTensor(2, 3, 112, 96))

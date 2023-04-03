@@ -5,7 +5,7 @@ TOTAL_EPOCH = 70
 
 RESUME = ''
 SAVE_DIR = './model'
-MODEL_PRE = 'CASIA_ShuffleFaceNet_'
+MODEL_PRE = 'CASIA_VarGFaceNet_'
 
 
 CASIA_DATA_DIR = '/home/users/matheusb/recfaces/datasets/CASIA-WebFace/' #'/'CASIA-WebFace

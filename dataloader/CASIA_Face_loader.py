@@ -3,12 +3,13 @@ import imageio
 import os
 from sklearn import preprocessing
 import torch
+import pytorch_lightning as pl
 #ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import sys
 sys.path.append("..")
 
-class CASIA_Face(object):
+class CASIA_Face(pl.LigthningDataModule):
     def __init__(self, root):
         self.image_list = []
         self.label_list = []
@@ -26,7 +27,7 @@ class CASIA_Face(object):
         img_path = self.image_list[index]
         target = self.label_list[index]
         img = imageio.imread(img_path)
-        #img = np.resize(img, (112, 112))
+        img = np.resize(img, (112, 112))
 
 
         if len(img.shape) == 2:
