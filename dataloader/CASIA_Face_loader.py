@@ -3,13 +3,13 @@ import imageio
 import os
 from sklearn import preprocessing
 import torch
-import pytorch_lightning as pl
+# import pytorch_lightning as pl
 #ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import sys
 sys.path.append("..")
 
-class CASIA_Face(pl.LightningDataModule):
+class CASIA_Face():
     def __init__(self, root):
         self.image_list = []
         self.label_list = []

@@ -16,26 +16,26 @@ from lfw_eval import parseList, evaluation_10_fold
 import numpy as np
 import scipy.io        
 
-def define_gpu():
-    # gpu init
-    gpu_list = ''
-    multi_gpus = False
-    if isinstance(GPU, int):
-        gpu_list = str(GPU)
-    else:
-        multi_gpus = True
-        for i, gpu_id in enumerate(GPU):
-            gpu_list += str(gpu_id)
-            if i != len(GPU) - 1:
-                gpu_list += ','
-    os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
+# def define_gpu():
+#     # gpu init
+#     gpu_list = ''
+#     multi_gpus = False
+#     if isinstance(GPU, int):
+#         gpu_list = str(GPU)
+#     else:
+#         multi_gpus = True
+#         for i, gpu_id in enumerate(GPU):
+#             gpu_list += str(gpu_id)
+#             if i != len(GPU) - 1:
+#                 gpu_list += ','
+#     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
 
-    return multi_gpus
+#     return multi_gpus
 
 
 if __name__ == '__main__':
-    multi_gpus = define_gpu()
-    print('multi_gpus', multi_gpus)
+    # multi_gpus = define_gpu()
+    # print('multi_gpus', multi_gpus)
 
     # other init
     start_epoch = 1
@@ -83,7 +83,8 @@ if __name__ == '__main__':
                                 t_alpha=1.0).cuda()
 
 
-    if multi_gpus:
+    if torch.cuda.device_count() > 1:
+        print("Train with MultiGPUs")
         net = DataParallel(net)
         lmcl_loss = DataParallel(lmcl_loss)
 

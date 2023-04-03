@@ -2,13 +2,13 @@ import numpy as np
 import imageio
 import torch
 import torch
-import pytorch_lightning as pl
+# import pytorch_lightning as pl
 import sys
 sys.path.append("..")
 # from retrieval.dataloaders.preprocessing import preprocess
 
 
-class LFW(pl.LightningDataModule):
+class LFW():
     def __init__(self, imgl, imgr):
 
         self.imgl_list = imgl

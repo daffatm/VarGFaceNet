@@ -3,7 +3,7 @@ from torch.nn import Linear, Conv2d, BatchNorm1d, BatchNorm2d, \
     PReLU, ReLU, Sigmoid, Dropout2d, Dropout, AvgPool2d, \
     MaxPool2d, AdaptiveAvgPool2d, Sequential, Module, Parameter
 from torch import nn
-import pytorch_lightning as pl
+# import pytorch_lightning as pl
 
 # batchnorm params
 bn_mom = 0.9
@@ -16,7 +16,7 @@ se_ratio = 4
 group_base = 8
 
 
-class Se_block(pl.LightningModule):
+class Se_block(Module):
     def __init__(self, num_filter, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)):
         super(Se_block, self).__init__()
         self.pool1 = AdaptiveAvgPool2d(1)
@@ -38,7 +38,7 @@ class Se_block(pl.LightningModule):
         return temp * x
 
 
-class Separable_Conv2d(pl.LightningModule):
+class Separable_Conv2d(Module):
     def __init__(self, in_channels, out_channels, kernel_size, padding, stride=(1, 1), factor=1, bias=False,
                  bn_dw_out=True, act_dw_out=True, bn_pw_out=True, act_pw_out=True, dilation=1):
         super(Separable_Conv2d, self).__init__()
@@ -80,7 +80,7 @@ class Separable_Conv2d(pl.LightningModule):
         return x
 
 
-class VarGNet_Block(pl.LightningModule):
+class VarGNet_Block(Module):
     def __init__(self, n_out_ch1, n_out_ch2, n_out_ch3, factor=2, dim_match=True, multiplier=1, kernel_size=(3, 3),
                  stride=(1, 1), dilation=1, with_dilate=False):
         super(VarGNet_Block, self).__init__()
@@ -120,7 +120,7 @@ class VarGNet_Block(pl.LightningModule):
         return out
 
 
-class VarGNet_Branch_Merge_Block(pl.LightningModule):
+class VarGNet_Branch_Merge_Block(Module):
     def __init__(self, n_out_ch1, n_out_ch2, n_out_ch3, factor=2, dim_match=False, multiplier=1, kernel_size=(3, 3),
                  stride=(2, 2), dilation=1, with_dilate=False):
         super(VarGNet_Branch_Merge_Block, self).__init__()
@@ -166,7 +166,7 @@ class VarGNet_Branch_Merge_Block(pl.LightningModule):
         return out
 
 
-class VarGNet_Conv_Block(pl.LightningModule):
+class VarGNet_Conv_Block(Module):
     def __init__(self, stage, units, in_channels, out_channels, kernel_size=(3, 3), stride=(2, 2), multiplier=1,
                  factor=2, dilation=1, with_dilate=False):
         super(VarGNet_Conv_Block, self).__init__()
@@ -190,7 +190,7 @@ class VarGNet_Conv_Block(pl.LightningModule):
         return x
 
 
-class Head_Block(pl.LightningModule):
+class Head_Block(Module):
     def __init__(self, num_filter, multiplier, head_pooling=False, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)):
         super(Head_Block, self).__init__()
 
@@ -219,7 +219,7 @@ class Head_Block(pl.LightningModule):
         return x
 
 
-class Embedding_Block(pl.LightningModule):
+class Embedding_Block(Module):
     def __init__(self, input_channels, last_channels, emb_size, bias=False):
         super(Embedding_Block, self).__init__()
 
@@ -266,7 +266,7 @@ class Embedding_Block(pl.LightningModule):
         return x
 
 
-class VarGFaceNet(pl.LightningModule):
+class VarGFaceNet(Module):
     def __init__(self):
         super(VarGFaceNet, self).__init__()
 
