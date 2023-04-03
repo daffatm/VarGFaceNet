@@ -74,7 +74,13 @@ if __name__ == '__main__':
     # NLLLoss
     nllloss = nn.CrossEntropyLoss().cuda()
     # CenterLoss
-    lmcl_loss = head.build_head(type='adaface',class_num=trainset.class_nums).cuda()
+    lmcl_loss = head.build_head(head_type='adaface',
+                                embedding_size=512,
+                                class_num=trainset.class_nums,
+                                m=0.4,
+                                h=0.333,
+                                s=64.,
+                                t_alpha=1.0).cuda()
 
 
     if multi_gpus:

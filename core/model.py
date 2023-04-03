@@ -1,221 +1,316 @@
 import torch
+from torch.nn import Linear, Conv2d, BatchNorm1d, BatchNorm2d, \
+    PReLU, ReLU, Sigmoid, Dropout2d, Dropout, AvgPool2d, \
+    MaxPool2d, AdaptiveAvgPool2d, Sequential, Module, Parameter
 from torch import nn
-# from torchsummary import summary
+import pytorch_lightning as pl
 
-'''
-求Input的二范数，为其输入除以其模长
-角度蒸馏Loss需要用到
-'''
-def l2_norm(input, axis=1):
-    norm  = torch.norm(input, axis, keepdim=True) # 默认p=2
-    output = torch.div(input, norm)
-    return output
+# batchnorm params
+bn_mom = 0.9
+bn_eps = 2e-5
+# use_global_stats = False
+
+# net_setting params
+use_se = True
+se_ratio = 4
+group_base = 8
 
 
-'''
-变组卷积，S表示每个通道的channel数量
-'''
-def VarGConv(in_channels, out_channels, kernel_size, stride, S):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=kernel_size//2, groups=in_channels//S, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.PReLU()
-    )
-
-'''
-pointwise卷积，这里的kernelsize都是1，不过这里也要分组吗？？
-'''
-def PointConv(in_channels, out_channels, stride, S, isPReLU):
-    return nn.Sequential(
-        nn.Conv2d(in_channels, out_channels, 1, stride, padding=0, groups=in_channels//S, bias=False),
-        nn.BatchNorm2d(out_channels),
-        nn.PReLU() if isPReLU else nn.Sequential()
-    )
-
-'''
-SE block
-'''
-class SqueezeAndExcite(nn.Module):
-    def __init__(self, in_channels, out_channels, divide=4):
-        super(SqueezeAndExcite, self).__init__()
-        mid_channels = in_channels // divide
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.SEblock = nn.Sequential(
-            nn.Linear(in_features=in_channels, out_features=mid_channels),
-            nn.ReLU6(inplace=True),
-            nn.Linear(in_features=mid_channels, out_features=out_channels),
-            nn.ReLU6(inplace=True), # 其实这里应该是sigmoid的
-        )
+class Se_block(pl.LightningModule):
+    def __init__(self, num_filter, kernel_size=(1, 1), stride=(1, 1), padding=(0, 0)):
+        super(Se_block, self).__init__()
+        self.pool1 = AdaptiveAvgPool2d(1)
+        # self.pool1 = AvgPool2d(?)
+        self.conv1 = Conv2d(in_channels=num_filter, out_channels=num_filter // se_ratio, kernel_size=kernel_size,
+                            stride=stride, padding=padding)
+        self.act1 = PReLU(num_filter // se_ratio)
+        self.conv2 = Conv2d(in_channels=num_filter // se_ratio, out_channels=num_filter, kernel_size=kernel_size,
+                            stride=stride, padding=padding)
+        self.act2 = Sigmoid()
 
     def forward(self, x):
-        b, c, h, w = x.size()
-        out = self.pool(x)
-        out = out.view(b, -1)
-        out = self.SEblock(out)
-        out = out.view(b, c, 1, 1)
-        return out * x
-
-'''
-normal block
-'''
-class NormalBlock(nn.Module):
-    def __init__(self, in_channels, kernel_size, stride=1, S=8):
-        super(NormalBlock, self).__init__()
-        out_channels = 2 * in_channels
-        self.vargconv1 = VarGConv(in_channels, out_channels, kernel_size, stride, S)
-        self.pointconv1 = PointConv(out_channels, in_channels, stride, S, isPReLU=True)
-
-        self.vargconv2 = VarGConv(in_channels, out_channels, kernel_size, stride, S)
-        self.pointconv2 = PointConv(out_channels, in_channels, stride, S, isPReLU=False)
-
-        self.se = SqueezeAndExcite(in_channels, in_channels)
-        self.prelu = nn.PReLU()
-
-    def forward(self, x):
-        out = x
-        x = self.pointconv1(self.vargconv1(x))
-        x = self.pointconv2(self.vargconv2(x))
-        x = self.se(x)
-        out += x
-        return self.prelu(out)
-
-'''
-downsampling block
-'''
-
-class DownSampling(nn.Module):
-    def __init__(self, in_channels, kernel_size, stride=2, S=8):
-        super(DownSampling, self).__init__()
-        out_channels = 2 * in_channels
+        temp = x
+        x = self.pool1(x)
+        x = self.conv1(x)
+        x = self.act1(x)
+        x = self.conv2(x)
+        x = self.act2(x)
+        return temp * x
 
 
-        self.branch1 = nn.Sequential(
-            VarGConv(in_channels, out_channels, kernel_size, stride, S),
-            PointConv(out_channels, out_channels, 1, S, isPReLU=True)
-        )
+class Separable_Conv2d(pl.LightningModule):
+    def __init__(self, in_channels, out_channels, kernel_size, padding, stride=(1, 1), factor=1, bias=False,
+                 bn_dw_out=True, act_dw_out=True, bn_pw_out=True, act_pw_out=True, dilation=1):
+        super(Separable_Conv2d, self).__init__()
 
-        self.branch2 = nn.Sequential(
-            VarGConv(in_channels, out_channels, kernel_size, stride, S),
-            PointConv(out_channels, out_channels, 1, S, isPReLU=True)
-        )
+        assert in_channels % group_base == 0
+        self.bn_dw_out = bn_dw_out
+        self.act_dw_out = act_dw_out
+        self.bn_pw_out = bn_pw_out
+        self.act_pw_out = act_pw_out
+        # depthwise
+        self.dw1 = Conv2d(in_channels=in_channels, out_channels=int(in_channels * factor), kernel_size=kernel_size,
+                          stride=stride, padding=padding, dilation=dilation, groups=int(in_channels / group_base),
+                          bias=bias)
+        if self.bn_dw_out:
+            self.dw2 = BatchNorm2d(num_features=int(in_channels * factor), eps=bn_eps, momentum=bn_mom,
+                                   track_running_stats=True)
+        if act_dw_out:
+            self.dw3 = PReLU(int(in_channels * factor))
 
-        self.block3 = nn.Sequential(
-            VarGConv(out_channels, 2*out_channels, kernel_size, 1, S), # stride =1
-            PointConv(2*out_channels, out_channels, 1, S, isPReLU=False)
-        ) # 上面那个分支
-
-        self.shortcut = nn.Sequential(
-            VarGConv(in_channels, out_channels, kernel_size, stride, S),
-            PointConv(out_channels, out_channels, 1, S, isPReLU=False)
-        )
-
-        self.prelu = nn.PReLU()
+        # pointwise
+        self.pw1 = Conv2d(in_channels=int(in_channels * factor), out_channels=out_channels, kernel_size=(1, 1),
+                          stride=(1, 1), padding=(0, 0), groups=1, bias=bias)
+        if self.bn_pw_out:
+            self.pw2 = BatchNorm2d(num_features=out_channels, eps=bn_eps, momentum=bn_mom, track_running_stats=True)
+        if self.act_pw_out:
+            self.pw3 = PReLU(out_channels)
 
     def forward(self, x):
-        out = self.shortcut(x)
+        x = self.dw1(x)
+        if self.bn_dw_out:
+            x = self.dw2(x)
+        if self.act_dw_out:
+            x = self.dw3(x)
+        x = self.pw1(x)
+        if self.bn_pw_out:
+            x = self.pw2(x)
+        if self.act_pw_out:
+            x = self.pw3(x)
+        return x
 
-        x1 = x2 = x
-        x1 = self.branch1(x1)
-        x2 = self.branch2(x2)
-        x3 = x1+x2
-        x3 = self.block3(x3)
 
-        out += x3
-        return self.prelu(out)
+class VarGNet_Block(pl.LightningModule):
+    def __init__(self, n_out_ch1, n_out_ch2, n_out_ch3, factor=2, dim_match=True, multiplier=1, kernel_size=(3, 3),
+                 stride=(1, 1), dilation=1, with_dilate=False):
+        super(VarGNet_Block, self).__init__()
 
+        out_channels_1 = int(n_out_ch1 * multiplier)
+        out_channels_2 = int(n_out_ch2 * multiplier)
+        out_channels_3 = int(n_out_ch3 * multiplier)
 
-class HeadSetting(nn.Module):
-    def __init__(self, in_channels, kernel_size, S=8):
-        super(HeadSetting, self).__init__()
-        self.block = nn.Sequential(
-            VarGConv(in_channels, in_channels, kernel_size, 2, S),
-            PointConv(in_channels, in_channels, 1, S, isPReLU=True),
-            VarGConv(in_channels, in_channels, kernel_size, 1, S),
-            PointConv(in_channels, in_channels, 1, S, isPReLU=False)
-        )
+        padding = (((kernel_size[0] - 1) * dilation + 1) // 2, ((kernel_size[1] - 1) * dilation + 1) // 2)
 
-        self.short = nn.Sequential(
-            VarGConv(in_channels, in_channels, kernel_size, 2, S),
-            PointConv(in_channels, in_channels, 1, S, isPReLU=False),
-        )
+        if with_dilate:
+            stride = (1, 1)
+        self.dim_match = dim_match
+
+        self.shortcut = Separable_Conv2d(in_channels=out_channels_1, out_channels=out_channels_3,
+                                         kernel_size=kernel_size, padding=padding, stride=stride, factor=factor,
+                                         bias=False, act_pw_out=False, dilation=dilation)
+        self.sep1 = Separable_Conv2d(in_channels=out_channels_1, out_channels=out_channels_2, kernel_size=kernel_size,
+                                     padding=padding, stride=stride, factor=factor, bias=False, dilation=dilation)
+        self.sep2 = Separable_Conv2d(in_channels=out_channels_2, out_channels=out_channels_3, kernel_size=kernel_size,
+                                     padding=padding, stride=(1, 1), factor=factor, bias=False, act_pw_out=False,
+                                     dilation=dilation)
+        self.sep3 = Se_block(num_filter=out_channels_3)
+        self.sep4 = PReLU(out_channels_3)
 
     def forward(self, x):
-        out = self.short(x)
-        x = self.block(x)
-        out += x
+        if self.dim_match:
+            short_cut = x
+        else:
+            short_cut = self.shortcut(x)
+        x = self.sep1(x)
+        x = self.sep2(x)
+        if use_se:
+            x = self.sep3(x)
+        out = x + short_cut
+        out = self.sep4(out)
         return out
 
 
-class Embedding(nn.Module):
-    def __init__(self, in_channels, out_channels=512, S=8):
-        super(Embedding, self).__init__()
-        self.embedding = nn.Sequential(
-            nn.Conv2d(in_channels, 1024, kernel_size=1, stride=1,padding=0, bias=False),
-            nn.BatchNorm2d(1024),
-            nn.ReLU6(inplace=True),
+class VarGNet_Branch_Merge_Block(pl.LightningModule):
+    def __init__(self, n_out_ch1, n_out_ch2, n_out_ch3, factor=2, dim_match=False, multiplier=1, kernel_size=(3, 3),
+                 stride=(2, 2), dilation=1, with_dilate=False):
+        super(VarGNet_Branch_Merge_Block, self).__init__()
 
-            nn.Conv2d(1024, 1024, 7, 1, padding=0, groups=1024//8, bias=False),
-            nn.Conv2d(1024, 512, 1, 1, padding=0, groups=512, bias=False)
-        )
+        out_channels_1 = int(n_out_ch1 * multiplier)
+        out_channels_2 = int(n_out_ch2 * multiplier)
+        out_channels_3 = int(n_out_ch3 * multiplier)
 
-        self.fc = nn.Linear(in_features=512, out_features=out_channels)
+        padding = (((kernel_size[0] - 1) * dilation + 1) // 2, ((kernel_size[1] - 1) * dilation + 1) // 2)
+
+        if with_dilate:
+            stride = (1, 1)
+
+        self.dim_match = dim_match
+
+        self.shortcut = Separable_Conv2d(in_channels=out_channels_1, out_channels=out_channels_3,
+                                         kernel_size=kernel_size, padding=padding, stride=stride, factor=factor,
+                                         bias=False, act_pw_out=False, dilation=dilation)
+        self.branch1 = Separable_Conv2d(in_channels=out_channels_1, out_channels=out_channels_2,
+                                        kernel_size=kernel_size, padding=padding, stride=stride, factor=factor,
+                                        bias=False, act_pw_out=False, dilation=dilation)
+        self.branch2 = Separable_Conv2d(in_channels=out_channels_1, out_channels=out_channels_2,
+                                        kernel_size=kernel_size, padding=padding, stride=stride, factor=factor,
+                                        bias=False, act_pw_out=False, dilation=dilation)
+        self.sep1 = PReLU(out_channels_2)
+        self.sep2 = Separable_Conv2d(in_channels=out_channels_2, out_channels=out_channels_3, kernel_size=kernel_size,
+                                     padding=padding, stride=(1, 1), factor=factor, bias=False, act_pw_out=False,
+                                     dilation=dilation)
+        self.sep3 = PReLU(out_channels_3)
 
     def forward(self, x):
-        x = self.embedding(x)
-        x = x.view(x.size(0), -1)
-        out = self.fc(x)
+        if self.dim_match:
+            short_cut = x
+        else:
+            short_cut = self.shortcut(x)
+        temp1 = self.branch1(x)
+        temp2 = self.branch2(x)
+        temp = temp1 + temp2
+        temp = self.sep1(temp)
+        temp = self.sep2(temp)
+        out = temp + short_cut
+        out = self.sep3(out)
         return out
 
-class VarGFaceNet(nn.Module):
-    def __init__(self, num_classes=512):
-        super(VarGFaceNet, self).__init__()
-        S=8
-        self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=40, kernel_size=3, stride=1, padding=1, bias=False),
-            nn.BatchNorm2d(40),
-            nn.ReLU6(inplace=True)
-        )
-        self.head = HeadSetting(40, 3)
-        self.stage2 = nn.Sequential( # 1 normal 2 down
-            DownSampling(40, 3, 2),
-            NormalBlock(80, 3, 1),
-            NormalBlock(80, 3, 1)
-        )
 
-        self.stage3 = nn.Sequential(
-            DownSampling(80, 3, 2),
-            NormalBlock(160, 3, 1),
-            NormalBlock(160, 3, 1),
-            NormalBlock(160, 3, 1),
-            NormalBlock(160, 3, 1),
-            NormalBlock(160, 3, 1),
-            NormalBlock(160, 3, 1)
-        )
+class VarGNet_Conv_Block(pl.LightningModule):
+    def __init__(self, stage, units, in_channels, out_channels, kernel_size=(3, 3), stride=(2, 2), multiplier=1,
+                 factor=2, dilation=1, with_dilate=False):
+        super(VarGNet_Conv_Block, self).__init__()
 
-        self.stage4 = nn.Sequential(
-            DownSampling(160, 3, 2),
-            NormalBlock(320, 3, 1),
-            NormalBlock(320, 3, 1),
-            NormalBlock(320, 3, 1)
-        )
+        assert stage >= 2, 'Stage is {}, stage must be set >=2'.format(stage)
+        self.branch_merge = VarGNet_Branch_Merge_Block(n_out_ch1=in_channels, n_out_ch2=out_channels,
+                                                       n_out_ch3=out_channels, factor=factor, dim_match=False,
+                                                       multiplier=multiplier, kernel_size=kernel_size, stride=stride,
+                                                       dilation=dilation, with_dilate=with_dilate)
+        features = []
+        for i in range(units - 1):
+            features.append(
+                VarGNet_Block(n_out_ch1=out_channels, n_out_ch2=out_channels, n_out_ch3=out_channels, factor=factor,
+                              dim_match=True, multiplier=multiplier, kernel_size=kernel_size, stride=(1, 1),
+                              dilation=dilation, with_dilate=with_dilate))
+        self.features = Sequential(*features)
 
-        self.embedding = Embedding(320, num_classes)
+    def forward(self, x):
+        x = self.branch_merge(x)
+        x = self.features(x)
+        return x
+
+
+class Head_Block(pl.LightningModule):
+    def __init__(self, num_filter, multiplier, head_pooling=False, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1)):
+        super(Head_Block, self).__init__()
+
+        channels = int(num_filter * multiplier)
+
+        self.head_pooling = head_pooling
+
+        self.conv1 = Conv2d(in_channels=3, out_channels=channels, kernel_size=kernel_size, stride=stride,
+                            padding=padding, groups=1, bias=False)
+        # RGB图像包含3个通道（in_channels）
+        self.bn1 = BatchNorm2d(num_features=channels, eps=bn_eps, momentum=bn_mom, track_running_stats=True)
+        self.pool = PReLU(channels)
+        self.head1 = MaxPool2d(kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+        self.head2 = VarGNet_Block(n_out_ch1=num_filter, n_out_ch2=num_filter, n_out_ch3=num_filter, factor=1,
+                                   dim_match=False, multiplier=multiplier, kernel_size=kernel_size, stride=(2, 2),
+                                   dilation=1, with_dilate=False)
 
     def forward(self, x):
         x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.pool(x)
+        if self.head_pooling:
+            x = self.head1(x)
+        else:
+            x = self.head2(x)
+        return x
+
+
+class Embedding_Block(pl.LightningModule):
+    def __init__(self, input_channels, last_channels, emb_size, bias=False):
+        super(Embedding_Block, self).__init__()
+
+        self.input_channels = input_channels
+        self.last_channels = last_channels
+
+        # last channels(0, optional)
+        self.conv0 = Conv2d(in_channels=input_channels, out_channels=last_channels, kernel_size=(1, 1), stride=(1, 1),
+                            padding=(0, 0), bias=bias)
+        self.bn0 = BatchNorm2d(num_features=last_channels, eps=bn_eps, momentum=bn_mom, track_running_stats=True)
+        self.pool0 = PReLU(last_channels)
+
+        # depthwise(1),输入为224*224时，可将kernel_size改为(14, 14)
+        self.conv1 = Conv2d(in_channels=last_channels, out_channels=last_channels, kernel_size=(7, 7), stride=(1, 1),
+                            padding=(0, 0), groups=int(last_channels / group_base), bias=bias)
+        self.bn1 = BatchNorm2d(num_features=last_channels, eps=bn_eps, momentum=bn_mom, track_running_stats=True)
+
+        # pointwise(2)
+        self.conv2 = Conv2d(in_channels=last_channels, out_channels=last_channels // 2, kernel_size=(1, 1),
+                            stride=(1, 1), padding=(0, 0), bias=bias)
+        self.bn2 = BatchNorm2d(num_features=last_channels // 2, eps=bn_eps, momentum=bn_mom, track_running_stats=True)
+        self.pool2 = PReLU(last_channels // 2)
+
+        # FC
+        self.fc = Linear(in_features=last_channels // 2, out_features=emb_size, bias=False)
+        self.bn = BatchNorm1d(num_features=emb_size, eps=bn_eps, momentum=bn_mom, track_running_stats=True)
+
+    def forward(self, x):
+        if self.input_channels != self.last_channels:
+            x = self.conv0(x)
+            x = self.bn0(x)
+            x = self.pool0(x)
+
+        x = self.conv1(x)
+        x = self.bn1(x)
+
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.pool2(x)
+
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        x = self.bn(x)
+        return x
+
+
+class VarGFaceNet(pl.LightningModule):
+    def __init__(self):
+        super(VarGFaceNet, self).__init__()
+
+        multiplier = 1.25
+        emb_size = 512
+        factor = 2
+        head_pooling = False
+        num_stage = 3
+        stage_list = [2, 3, 4]
+        units = [3, 7, 4]
+        filter_list = [32, 64, 128, 256]
+        last_channels = 1024
+        dilation_list = [1, 1, 1]
+        with_dilate_list = [False, False, False]
+
+        self.head = Head_Block(num_filter=filter_list[0], multiplier=multiplier, head_pooling=head_pooling,
+                               kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        body = []
+        for i in range(num_stage):
+            body.append(VarGNet_Conv_Block(stage=stage_list[i], units=units[i], in_channels=filter_list[i],
+                                           out_channels=filter_list[i + 1], kernel_size=(3, 3), stride=(2, 2),
+                                           multiplier=multiplier, factor=factor, dilation=dilation_list[i],
+                                           with_dilate=with_dilate_list[i]))
+        self.body = Sequential(*body)
+        self.emb = Embedding_Block(input_channels=int(filter_list[3] * multiplier), last_channels=last_channels,
+                                   emb_size=emb_size, bias=False)  # 源代码的input_channels缺少*multiplier，无法运行
+        # initialization
+        for m in self.modules():  # 借用MobileNetV3的初始化方法
+            if isinstance(m, Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out')
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+            elif isinstance(m, (BatchNorm1d, BatchNorm2d)):
+                nn.init.ones_(m.weight)
+                nn.init.zeros_(m.bias)
+            elif isinstance(m, Linear):
+                nn.init.normal_(m.weight, 0, 0.01)
+                nn.init.zeros_(m.bias)
+
+    
+    def forward(self, x):
         x = self.head(x)
-        x = self.stage2(x)
-        x = self.stage3(x)
-        x = self.stage4(x)
-
-        out = self.embedding(x)
-        norm = torch.norm(out, 2, 1, True)
-        output = torch.div(out, norm)
+        x = self.body(x)
+        x = self.emb(x)
+        norm = torch.norm(x, 2, 1, True)
+        output = torch.div(x, norm)
         return output, norm
-
-if __name__ == "__main__":
-    # input = Variable(torch.FloatTensor(2, 3, 112, 96))
-    net = VarGFaceNet()
-    print(net)
-    # x = net(input)
-    # print(x.shape)

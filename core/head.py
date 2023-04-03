@@ -9,7 +9,7 @@ def build_head(head_type,
                m,
                t_alpha,
                h,
-               s,
+               s
                ):
 
     if head_type == 'adaface':
@@ -24,13 +24,13 @@ def build_head(head_type,
         head = ArcFace(embedding_size=embedding_size,
                        classnum=class_num,
                        m=m,
-                       s=s,
+                       s=s
                        )
     elif head_type == 'cosface':
         head = CosFace(embedding_size=embedding_size,
                        classnum=class_num,
                        m=m,
-                       s=s,
+                       s=s
                        )
     else:
         raise ValueError('not a correct head type', head_type)
@@ -41,7 +41,6 @@ def l2_norm(input,axis=1):
     output = torch.div(input, norm)
     return output
 
-
 class AdaFace(Module):
     def __init__(self,
                  embedding_size=512,
@@ -49,7 +48,7 @@ class AdaFace(Module):
                  m=0.4,
                  h=0.333,
                  s=64.,
-                 t_alpha=1.0,
+                 t_alpha=1.0
                  ):
         super(AdaFace, self).__init__()
         self.classnum = classnum

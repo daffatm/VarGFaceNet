@@ -9,7 +9,7 @@ import pytorch_lightning as pl
 import sys
 sys.path.append("..")
 
-class CASIA_Face(pl.LigthningDataModule):
+class CASIA_Face(pl.LightningDataModule):
     def __init__(self, root):
         self.image_list = []
         self.label_list = []
