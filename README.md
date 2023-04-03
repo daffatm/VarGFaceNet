@@ -6,6 +6,7 @@ Pytorch implentation of VarGFaceNet, reimplented from the official MXNet Code, s
 - [VarGNet: Variable Group Convolutional Neural Network for Efficient Embedded Computing](https://arxiv.org/abs/1907.05653)
 
 ## Reference
-- https://github.com/zma-c-137/VarGFaceNet
-- https://github.com/greendream182/VarGFaceNet
-- https://github.com/mbfaria/ShuffleFaceNet_Pytorch
+- VarGFaceNet: https://github.com/zma-c-137/VarGFaceNet
+- VarGFaceNet-Pytorch: https://github.com/enquan/VarGFaceNet_Pytorch
+- Base Code: https://github.com/mbfaria/ShuffleFaceNet_Pytorch
+- Loss: https://github.com/mk-minchul/AdaFace

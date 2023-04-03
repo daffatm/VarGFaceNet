@@ -301,10 +301,12 @@ class VarGFaceNet(pl.LightningModule):
                     nn.init.zeros_(m.bias)
             elif isinstance(m, (BatchNorm1d, BatchNorm2d)):
                 nn.init.ones_(m.weight)
-                nn.init.zeros_(m.bias)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
             elif isinstance(m, Linear):
                 nn.init.normal_(m.weight, 0, 0.01)
-                nn.init.zeros_(m.bias)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
 
     
     def forward(self, x):
