@@ -172,7 +172,7 @@ if __name__ == '__main__':
         if epoch % SAVE_FREQ == 0:
             msg = 'Saving checkpoint: {}'.format(epoch)
             _print(msg)
-            if multi_gpus:
+            if torch.cuda.device_count() > 1:
                 net_state_dict = net.module.state_dict()
             else:
                 net_state_dict = net.state_dict()
