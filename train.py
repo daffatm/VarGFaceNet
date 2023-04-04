@@ -14,7 +14,8 @@ import torch.optim as optim
 import time
 from lfw_eval import parseList, evaluation_10_fold
 import numpy as np
-import scipy.io        
+import scipy.io
+import sys
 
 # def define_gpu():
 #     # gpu init
@@ -50,7 +51,7 @@ if __name__ == '__main__':
     print('defining casia dataloader...')
     trainset = CASIA_Face(root=CASIA_DATA_DIR)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE,
-                                              shuffle=True, num_workers=2, drop_last=False)
+                                              shuffle=True, num_workers=6, drop_last=False)
 
     # nl: left_image_path
     # nr: right_image_path
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     nl, nr, folds, flags = parseList(root=LFW_DATA_DIR)
     testdataset = LFW(nl, nr)
     testloader = torch.utils.data.DataLoader(testdataset, batch_size=32,
-                                             shuffle=False, num_workers=2, drop_last=False)
+                                             shuffle=False, num_workers=6, drop_last=False)
 
     # define model
     print('defining vargfacenet model...')
@@ -113,7 +114,10 @@ if __name__ == '__main__':
         train_total_loss = 0.0
         total = 0
         since = time.time()
-        for data in trainloader:
+        total_step = len(trainloader)
+        for i, data in enumerate(trainloader):
+            sys.stdout.write("\r Step: {0}/{1}".format(i, total_step))
+            sys.stdout.flush()
             img, label = data[0].cuda(), data[1].cuda()
             batch_size = img.size(0)
             # optimizer_ft.zero_grad() 
