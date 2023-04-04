@@ -151,7 +151,10 @@ if __name__ == '__main__':
             featureLs = None
             featureRs = None
             _print('Test Epoch: {} ...'.format(epoch))
-            for data in testloader:
+            total_step = len(testloader)
+            for i, data in enumerate(testloader):
+                sys.stdout.write("\r Step: {0}/{1}".format(i, total_step))
+                sys.stdout.flush()
                 for i in range(len(data)):
                     data[i] = data[i].cuda()
                 res = [net(d).data.cpu().numpy() for d in data]
