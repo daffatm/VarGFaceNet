@@ -66,6 +66,7 @@ if __name__ == '__main__':
     net = model.VarGFaceNet()
 
     if RESUME:
+        print("Resume Training...")
         ckpt = torch.load(RESUME)
         net.load_state_dict(ckpt['net_state_dict'])
         start_epoch = ckpt['epoch'] + 1
@@ -157,7 +158,10 @@ if __name__ == '__main__':
                 sys.stdout.flush()
                 for i in range(len(data)):
                     data[i] = data[i].cuda()
-                res = [net(d).data.cpu().numpy() for d in data]
+                for d in data:
+                  out, norms = net(d)
+                  res.append(out.data.cpu().numpy())
+                # res = [net(d).data.cpu().numpy() for d in data]
                 featureL = np.concatenate((res[0], res[1]), 1)
                 featureR = np.concatenate((res[2], res[3]), 1)
                 if featureLs is None:
