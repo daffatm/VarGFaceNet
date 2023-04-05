@@ -158,6 +158,7 @@ if __name__ == '__main__':
                 sys.stdout.flush()
                 for i in range(len(data)):
                     data[i] = data[i].cuda()
+                res = []
                 for d in data:
                   out, norms = net(d)
                   res.append(out.data.cpu().numpy())
