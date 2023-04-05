@@ -4,12 +4,12 @@ TEST_FREQ = 5
 TOTAL_EPOCH = 70
 
 RESUME = ''
-SAVE_DIR = './model'
+SAVE_DIR = '../drive/MyDrive/Face Dataset/vargfacenet/model'
 MODEL_PRE = 'CASIA_VarGFaceNet_'
 
 
-CASIA_DATA_DIR = '/home/users/matheusb/recfaces/datasets/CASIA-WebFace/' #'/'CASIA-WebFace
-LFW_DATA_DIR = '/home/users/matheusb/recfaces/datasets/LFW/'
+CASIA_DATA_DIR = '/content/casia-112x112' #'/'CASIA-WebFace
+LFW_DATA_DIR = '/content/lfw'
 LFW_NAME = 'lfw-112x112'
 TINYFACE_DATA_DIR = '/home/users/matheusb/recfaces/datasets/Tiny-Face/'
 
