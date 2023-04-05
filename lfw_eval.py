@@ -10,7 +10,7 @@ import os
 import torch.utils.data
 from core import model
 from dataloader.LFW_loader import LFW
-from config import LFW_DATA_DIR
+from config import LFW_DATA_DIR, LFW_NAME
 import argparse
 
 
@@ -19,7 +19,7 @@ def parseList(root):
         pairs = f.read().splitlines()[1:]
     
     # ORG
-    folder_name = 'lfw'
+    folder_name = LFW_NAME
     nameLs = []
     nameRs = []
     folds = []

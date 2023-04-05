@@ -10,6 +10,7 @@ MODEL_PRE = 'CASIA_VarGFaceNet_'
 
 CASIA_DATA_DIR = '/home/users/matheusb/recfaces/datasets/CASIA-WebFace/' #'/'CASIA-WebFace
 LFW_DATA_DIR = '/home/users/matheusb/recfaces/datasets/LFW/'
+LFW_NAME = 'lfw-112x112'
 TINYFACE_DATA_DIR = '/home/users/matheusb/recfaces/datasets/Tiny-Face/'
 
 GPU = 0,1,2
