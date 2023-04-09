@@ -10,6 +10,7 @@ from core.utils import init_log
 from dataloader.CASIA_Face_loader import CASIA_Face
 from dataloader.LFW_loader import LFW
 from torch.optim import lr_scheduler
+from torchsummary import summary
 import torch.optim as optim
 import time
 from lfw_eval import parseList, evaluation_10_fold
@@ -17,27 +18,7 @@ import numpy as np
 import scipy.io
 import sys
 
-# def define_gpu():
-#     # gpu init
-#     gpu_list = ''
-#     multi_gpus = False
-#     if isinstance(GPU, int):
-#         gpu_list = str(GPU)
-#     else:
-#         multi_gpus = True
-#         for i, gpu_id in enumerate(GPU):
-#             gpu_list += str(gpu_id)
-#             if i != len(GPU) - 1:
-#                 gpu_list += ','
-#     os.environ['CUDA_VISIBLE_DEVICES'] = gpu_list
-
-#     return multi_gpus
-
-
 if __name__ == '__main__':
-    # multi_gpus = define_gpu()
-    # print('multi_gpus', multi_gpus)
-
     # other init
     start_epoch = 1
     save_dir = os.path.join(SAVE_DIR, MODEL_PRE + datetime.now().strftime('%Y%m%d_%H%M%S'))
@@ -72,6 +53,7 @@ if __name__ == '__main__':
         start_epoch = ckpt['epoch'] + 1
 
     net = net.cuda()
+    summary(net, input_size=(3, 112, 112))
 
     # NLLLoss
     nllloss = nn.CrossEntropyLoss().cuda()
@@ -91,7 +73,6 @@ if __name__ == '__main__':
         lmcl_loss = DataParallel(lmcl_loss)
 
     criterion = [nllloss, lmcl_loss]
-    # criterion = nllloss
 
     # optimzer4nn
     optimizer4nn = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0005)
@@ -121,13 +102,11 @@ if __name__ == '__main__':
             sys.stdout.flush()
             img, label = data[0].cuda(), data[1].cuda()
             batch_size = img.size(0)
-            # optimizer_ft.zero_grad() 
 
             raw_logits, norms = net(img)
 
             mlogits = criterion[1](raw_logits, norms, label)
             total_loss = criterion[0](mlogits, label)
-            # total_loss = criterion(raw_logits, label)
 
             optimizer4nn.zero_grad() 
             optimzer4center.zero_grad()
@@ -162,7 +141,6 @@ if __name__ == '__main__':
                 for d in data:
                   out, norms = net(d)
                   res.append(out.data.cpu().numpy())
-                # res = [net(d).data.cpu().numpy() for d in data]
                 featureL = np.concatenate((res[0], res[1]), 1)
                 featureR = np.concatenate((res[2], res[3]), 1)
                 if featureLs is None:

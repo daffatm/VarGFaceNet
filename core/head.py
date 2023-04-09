@@ -68,10 +68,11 @@ class AdaFace(Module):
         self.register_buffer('batch_std', torch.ones(1)*100)
 
         print('\nAdaFace with the following property')
-        print('self.m', self.m)
-        print('self.h', self.h)
-        print('self.s', self.s)
-        print('self.t_alpha', self.t_alpha)
+        print('Margin:', self.m)
+        print('Hardness:', self.h)
+        print('Scale', self.s)
+        print('Temp/t_alpha', self.t_alpha)
+        print('\n')
 
     def forward(self, embbedings, norms, label):
 
