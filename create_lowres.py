@@ -56,7 +56,7 @@ for subdir, dirs, files in os.walk(os.path.join(base_path, path_112)):
                 if not os.path.exists(new_folder):
                     os.makedirs(new_folder)
                 cv2.imwrite(os.path.join(new_folder, file), img)
-                sys.stdout.write("\r Progress Done: {0}/{1}".format(i+1, total))
+                sys.stdout.write("\rProgress Done: {0}/{1}".format(i+1, total))
                 sys.stdout.flush()
             except Exception as e:
                 # print(e)
@@ -82,7 +82,7 @@ for subdir, dirs, files in os.walk(os.path.join(base_path, path_112)):
                 if not os.path.exists(new_folder):
                     os.makedirs(new_folder)
                 cv2.imwrite(os.path.join(new_folder, file), img)
-                sys.stdout.write("\r Progress Done: {0}/{1}".format(i+1, total))
+                sys.stdout.write("\rProgress Done: {0}/{1}".format(i+1, total))
                 sys.stdout.flush()
             except Exception as e:
                 # print(e)
