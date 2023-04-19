@@ -17,6 +17,7 @@ from lfw_eval import parseList, evaluation_10_fold
 import numpy as np
 import scipy.io
 import sys
+from data_utils import extract_deep_feature
 
 if __name__ == '__main__':
     # other init
@@ -32,15 +33,15 @@ if __name__ == '__main__':
     print('defining casia dataloader...')
     trainset = CASIA_Face(root=CASIA_DATA_DIR)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE,
-                                              shuffle=True, num_workers=6, drop_last=False)
+                                              shuffle=True, num_workers=5, drop_last=False)
 
     # nl: left_image_path
     # nr: right_image_path
     print('defining lfw dataloader...')
-    nl, nr, folds, flags = parseList(root=LFW_DATA_DIR)
+    nl, nr, folds, flags = parseList(root=LFW_DATA_DIR, name="lfw-112x112")
     testdataset = LFW(nl, nr)
     testloader = torch.utils.data.DataLoader(testdataset, batch_size=32,
-                                             shuffle=False, num_workers=6, drop_last=False)
+                                             shuffle=False, num_workers=5, drop_last=False)
 
     # define model
     print('defining vargfacenet model...')
@@ -79,15 +80,15 @@ if __name__ == '__main__':
     sheduler_4nn = lr_scheduler.StepLR(optimizer4nn, 20, gamma=0.5)
 
     # optimzer4center
-    optimzer4center = optim.Adam(lmcl_loss.parameters(), lr=0.01)
-    sheduler_4center = lr_scheduler.StepLR(optimizer4nn, 20, gamma=0.5)
+    optimizer4center = optim.Adam(lmcl_loss.parameters(), lr=0.01)
+    sheduler_4center = lr_scheduler.StepLR(optimizer4center, 20, gamma=0.5)
 
     best_acc = 0.0
     best_epoch = 0
     for epoch in range(start_epoch, TOTAL_EPOCH+1):
         # exp_lr_scheduler.step()
         optimizer4nn.step()
-        optimzer4center.step()  
+        optimizer4center.step()  
              
         # train model
         _print('Train Epoch: {}/{} ...'.format(epoch, TOTAL_EPOCH))
@@ -109,12 +110,12 @@ if __name__ == '__main__':
             total_loss = criterion[0](mlogits, label)
 
             optimizer4nn.zero_grad() 
-            optimzer4center.zero_grad()
+            optimizer4center.zero_grad()
 
             total_loss.backward()
             
             optimizer4nn.step()
-            optimzer4center.step() 
+            optimizer4center.step() 
 
             train_total_loss += total_loss.item() * batch_size
             total += batch_size
@@ -135,18 +136,26 @@ if __name__ == '__main__':
             for i, data in enumerate(testloader):
                 sys.stdout.write("\r Step: {0}/{1}".format(i, total_step))
                 sys.stdout.flush()
+                
                 for i in range(len(data)):
                     data[i] = data[i].cuda()
+                    
                 res = []
                 for d in data:
-                  out, norms = net(d)
-                  res.append(out.data.cpu().numpy())
+                    out, _ = net(d)
+                    fliped_image = torch.flip(d, dims=[3])
+                    flipped_embedding, flipped_ = net(fliped_image)
+                    embedding = extract_deep_feature(out, _, flipped_embedding, flipped_)
+                    res.append(embedding)
+                    
                 featureL = np.concatenate((res[0], res[1]), 1)
                 featureR = np.concatenate((res[2], res[3]), 1)
+                
                 if featureLs is None:
                     featureLs = featureL
                 else:
                     featureLs = np.concatenate((featureLs, featureL), 0)
+                    
                 if featureRs is None:
                     featureRs = featureR
                 else:
@@ -154,6 +163,8 @@ if __name__ == '__main__':
 
             result = {'fl': featureLs, 'fr': featureRs, 'fold': folds, 'flag': flags}
             # save tmp_result
+            if not os.path.exists('./result'):
+                os.makedirs('./result')
             scipy.io.savemat('./result/tmp_result.mat', result)
             accs = evaluation_10_fold('./result/tmp_result.mat')
             _print('    ave: {:.4f}'.format(np.mean(accs) * 100))

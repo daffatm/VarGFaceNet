@@ -3,7 +3,6 @@ import imageio
 import os
 from sklearn import preprocessing
 import torch
-# import pytorch_lightning as pl
 #ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import sys
@@ -29,7 +28,6 @@ class CASIA_Face():
         img = imageio.imread(img_path)
         # img = np.resize(img, (112, 112))
 
-
         if len(img.shape) == 2:
             img = np.stack([img] * 3, 2)
 
@@ -43,12 +41,3 @@ class CASIA_Face():
 
     def __len__(self):
         return len(self.image_list)
-
-
-if __name__ == '__main__':
-    data_dir = '/home/users/matheusb/recfaces/datasets/CASIA-WebFace/'
-    dataset = CASIA_Face(root=data_dir)
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True, num_workers=8, drop_last=False)
-    print(len(dataset))
-    for data in trainloader:
-        print(data[0].shape)

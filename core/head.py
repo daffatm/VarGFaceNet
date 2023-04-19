@@ -3,15 +3,7 @@ import math
 import torch
 import torch.nn as nn
 
-def build_head(head_type,
-               embedding_size,
-               class_num,
-               m,
-               t_alpha,
-               h,
-               s
-               ):
-
+def build_head(head_type, embedding_size, class_num, m, t_alpha, h, s):
     if head_type == 'adaface':
         head = AdaFace(embedding_size=embedding_size,
                        classnum=class_num,
@@ -75,7 +67,6 @@ class AdaFace(Module):
         print('-------------------------------------')
 
     def forward(self, embbedings, norms, label):
-
         kernel_norm = l2_norm(self.kernel,axis=0)
         cosine = torch.mm(embbedings,kernel_norm)
         cosine = cosine.clamp(-1+self.eps, 1-self.eps) # for stability
@@ -120,7 +111,6 @@ class AdaFace(Module):
         return scaled_cosine_m
 
 class CosFace(nn.Module):
-
     def __init__(self, embedding_size=512, classnum=51332,  s=64., m=0.4):
         super(CosFace, self).__init__()
         self.classnum = classnum
@@ -136,7 +126,6 @@ class CosFace(nn.Module):
         print('self.s', self.s)
 
     def forward(self, embbedings, norms, label):
-
         kernel_norm = l2_norm(self.kernel,axis=0)
         cosine = torch.mm(embbedings,kernel_norm)
         cosine = cosine.clamp(-1+self.eps, 1-self.eps) # for stability
@@ -150,7 +139,6 @@ class CosFace(nn.Module):
 
 
 class ArcFace(Module):
-
     def __init__(self, embedding_size=512, classnum=51332,  s=64., m=0.5):
         super(ArcFace, self).__init__()
         self.classnum = classnum
@@ -163,7 +151,6 @@ class ArcFace(Module):
         self.eps = 1e-4
 
     def forward(self, embbedings, norms, label):
-
         kernel_norm = l2_norm(self.kernel,axis=0)
         cosine = torch.mm(embbedings,kernel_norm)
         cosine = cosine.clamp(-1+self.eps, 1-self.eps) # for stability

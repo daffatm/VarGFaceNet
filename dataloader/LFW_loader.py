@@ -2,11 +2,9 @@ import numpy as np
 import imageio
 import torch
 import torch
-# import pytorch_lightning as pl
 import sys
 sys.path.append("..")
 # from retrieval.dataloaders.preprocessing import preprocess
-
 
 class LFW():
     def __init__(self, imgl, imgr):
@@ -16,9 +14,11 @@ class LFW():
 
     def __getitem__(self, index):
         imgl = imageio.imread(self.imgl_list[index])
+        imgl = np.resize(imgl, (112, 112))
         if len(imgl.shape) == 2:
             imgl = np.stack([imgl] * 3, 2)
         imgr = imageio.imread(self.imgr_list[index])
+        imgr = np.resize(imgr, (112, 112))
         if len(imgr.shape) == 2:
             imgr = np.stack([imgr] * 3, 2)
 
@@ -33,14 +33,3 @@ class LFW():
 
     def __len__(self):
         return len(self.imgl_list)
-
-
-if __name__ == '__main__':
-    data_dir = '/home/users/keiller/recfaces/datasets/LFW/'
-    from lfw_eval import parseList
-    nl, nr, folds, flags = parseList(root=data_dir)
-    dataset = LFW(nl, nr)
-    trainloader = torch.utils.data.DataLoader(dataset, batch_size=32, shuffle=True, num_workers=8, drop_last=False)
-    print(len(dataset))
-    for data in trainloader:
-        print(data[0].shape)

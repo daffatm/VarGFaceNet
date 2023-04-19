@@ -3,7 +3,6 @@ from torch.nn import Linear, Conv2d, BatchNorm1d, BatchNorm2d, \
     PReLU, ReLU, Sigmoid, Dropout2d, Dropout, AvgPool2d, \
     MaxPool2d, AdaptiveAvgPool2d, Sequential, Module, Parameter
 from torch import nn
-# import pytorch_lightning as pl
 
 # batchnorm params
 bn_mom = 0.9
