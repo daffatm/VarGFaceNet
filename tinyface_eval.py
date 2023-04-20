@@ -73,10 +73,10 @@ def infer(model, dataloader, use_flip_test=True, gpu=True):
     features = np.concatenate(features, axis=0)
     return features
 
-def load_model(model, gpu=True):
+def load_model(resume, gpu=True):
     # define backbone and margin layer
     net = model.VarGFaceNet()
-    ckpt = torch.load(model, map_location='cpu')
+    ckpt = torch.load(resume, map_location='cpu')
     net.load_state_dict(ckpt['net_state_dict'])
 
     # gpu init

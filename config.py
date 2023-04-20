@@ -4,7 +4,7 @@ TEST_FREQ = 5
 TOTAL_EPOCH = 70
 
 RESUME = ''
-SAVE_DIR = '../drive/MyDrive/Face Dataset/vargfacenet/model'
+SAVE_DIR = '../drive/MyDrive/Face Recognition/vargfacenet/model'
 MODEL_PRE = 'CASIA_VarGFaceNet_'
 
 CASIA_DATA_DIR = '/content/casia-112x112' #'/'CASIA-WebFace

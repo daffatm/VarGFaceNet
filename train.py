@@ -3,7 +3,7 @@ import torch.utils.data
 from torch import nn
 from torch.nn import DataParallel
 from datetime import datetime
-from config import BATCH_SIZE, SAVE_FREQ, RESUME, SAVE_DIR, TEST_FREQ, TOTAL_EPOCH, MODEL_PRE, GPU
+from config import BATCH_SIZE, SAVE_FREQ, RESUME, SAVE_DIR, TEST_FREQ, TOTAL_EPOCH, MODEL_PRE
 from config import CASIA_DATA_DIR, LFW_DATA_DIR
 from core import model, head
 from core.utils import init_log
