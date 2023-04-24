@@ -7,7 +7,7 @@ def img_resize(img_file, shape=(112, 112)):
     img = cv2.resize(img, shape)
     return img
 
-base_path = "D:\\Kuliah\\Skripsi\\lfw"
+base_path = "content/lfw"
 path_112 = "lfw-112x112"
 path_56 = "lfw-56x56"
 path_28 = "lfw-28x28"
