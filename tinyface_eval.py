@@ -31,7 +31,10 @@ class ListDataset(Dataset):
         # Load Image
         image_path = self.img_list[idx]
         img = cv2.imread(image_path)
-        img = img[:, :, :3]
+        # img = img[:, :, :3]
+        img = np.resize(img, (112, 112))
+        if len(img.shape) == 2:
+            img = np.stack([img] * 3, 2)
 
         # To Tensor
         img = Image.fromarray(img)

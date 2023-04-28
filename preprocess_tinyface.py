@@ -3,29 +3,37 @@ import os
 import sys
 import numpy as np
 
-base_path = "/content/tinyface"
-new_path = "/content/tinyface_fix"
+base_path = "/content/tinyface_raw"
+new_path = "/content/tinyface"
 
 # read image
-def img_resize(image_path, new_width=28, new_height=28):
-    # Open image using PIL
-    with Image.open(image_path) as image:
-        # Calculate new height and width while preserving aspect ratio
-        width, height = image.size
-        aspect_ratio = width / height
-        if new_width / new_height > aspect_ratio:
-            new_width = int(new_height * aspect_ratio)
+from PIL import Image
+
+def img_resize(image_path, size=28):
+    # buka gambar
+    with Image.open(image_path) as img:
+        # hitung aspek rasio
+        aspect_ratio = img.size[0] / img.size[1]
+        
+        # tentukan ukuran yang tepat
+        if aspect_ratio >= 1:
+            new_size = (size, int(size / aspect_ratio))
         else:
-            new_height = int(new_width / aspect_ratio)
+            new_size = (int(size * aspect_ratio), size)
+        
+        # ubah ukuran gambar
+        img = img.resize(new_size)
+        
+        # buat latar belakang hitam
+        background = Image.new('RGB', (size, size), (0, 0, 0, 255))
+        
+        # hitung posisi untuk menempatkan gambar
+        offset = ((size - new_size[0]) // 2, (size - new_size[1]) // 2)
+        
+        # tempatkan gambar di atas latar belakang hitam
+        background.paste(img, offset)
 
-        # Resize the image
-        resized_image = image.resize((new_width, new_height))
-
-        # Create a new image with the final dimensions and fill the empty space with black
-        final_image = Image.new(mode='RGB', size=(new_width, new_height), color='black')
-        final_image.paste(resized_image, (0, 0))
-
-        return final_image
+        return background
 
 error_list = []
 # Looping untuk setiap subfolder dan gambar dalam folder asli
