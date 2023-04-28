@@ -85,7 +85,7 @@ def inference(file, speed_mem_eval=False, resume=None, gpu=False):
                 flipped_embedding, flipped_ = net(fliped_image)
                 embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
                 
-                print(prof.key_averages(group_by_input_shape=True).table(sort_by="cpu_memory_usage", row_limit=10))
+        print(prof.key_averages(group_by_input_shape=True).table(sort_by="cpu_memory_usage", row_limit=10))
     else:
         # Ekstraksi embedding
         embedding, _ = net(img1)

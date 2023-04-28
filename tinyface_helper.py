@@ -14,7 +14,7 @@ def get_all_files(root, extension_list=['.jpg', '.png', '.jpeg']):
     return all_files
 
 class TinyFaceTest:
-    def __init__(self, tinyface_root='Face/tinyface'):
+    def __init__(self, tinyface_root='Face/tinyface/SR'):
         self.tinyface_root = tinyface_root
         
         # All Image Lists
