@@ -76,19 +76,28 @@ if __name__ == '__main__':
     criterion = [nllloss, lmcl_loss]
 
     # optimzer4nn
-    optimizer4nn = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0005)
-    sheduler_4nn = lr_scheduler.StepLR(optimizer4nn, 20, gamma=0.5)
+    # optimizer4nn = optim.Adam(net.parameters(), lr=0.001, weight_decay=0.0005)
+    # sheduler_4nn = lr_scheduler.StepLR(optimizer4nn, 20, gamma=0.5)
 
     # optimzer4center
-    optimizer4center = optim.Adam(lmcl_loss.parameters(), lr=0.01)
-    sheduler_4center = lr_scheduler.StepLR(optimizer4center, 20, gamma=0.5)
+    # optimizer4center = optim.Adam(lmcl_loss.parameters(), lr=0.01)
+    # sheduler_4center = lr_scheduler.StepLR(optimizer4center, 20, gamma=0.5)
+    
+    # All Optimizer
+    optimizer = optim.SGD([
+        {'params': net.parameters(), 'weight_decay': 5e-4},
+        {'params': lmcl_loss.parameters(), 'weight_decay': 5e-4}
+    ], lr=0.1, momentum=0.9, nesterov=True)
+
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[10, 18, 22], gamma=0.1)
 
     best_acc = 0.0
     best_epoch = 0
     for epoch in range(start_epoch, TOTAL_EPOCH+1):
         # exp_lr_scheduler.step()
-        optimizer4nn.step()
-        optimizer4center.step()  
+        # optimizer4nn.step()
+        # optimizer4center.step() 
+        scheduler.step()
              
         # train model
         _print('Train Epoch: {}/{} ...'.format(epoch, TOTAL_EPOCH))
@@ -109,13 +118,15 @@ if __name__ == '__main__':
             mlogits = criterion[1](raw_logits, norms, label)
             total_loss = criterion[0](mlogits, label)
 
-            optimizer4nn.zero_grad() 
-            optimizer4center.zero_grad()
+            # optimizer4nn.zero_grad() 
+            # optimizer4center.zero_grad()
+            optimizer.zero_grad()
 
             total_loss.backward()
             
-            optimizer4nn.step()
-            optimizer4center.step() 
+            # optimizer4nn.step()
+            # optimizer4center.step()
+            optimizer.step() 
 
             train_total_loss += total_loss.item() * batch_size
             total += batch_size

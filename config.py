@@ -1,7 +1,7 @@
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 SAVE_FREQ = 1
-TEST_FREQ = 5
-TOTAL_EPOCH = 70
+TEST_FREQ = 6
+TOTAL_EPOCH = 24
 
 RESUME = ''
 SAVE_DIR = '../drive/MyDrive/Face Recognition/vargfacenet/model'
