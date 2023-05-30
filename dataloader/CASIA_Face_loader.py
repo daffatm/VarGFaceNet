@@ -3,16 +3,17 @@ import imageio
 import os
 from sklearn import preprocessing
 import torch
-from dataloader.augmenter import augmenter
+from dataloader.augmenter import Augmenter
 #ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import sys
 sys.path.append("..")
 
 class CASIA_Face():
-    def __init__(self, root):
+    def __init__(self, root, augmenter=Augmenter(0.2, 0.2, 0.2)):
         self.image_list = []
         self.label_list = []
+        self.augmenter = augmenter
 
         for r, _, files in os.walk(root):
             for f in files:
@@ -31,16 +32,16 @@ class CASIA_Face():
 
         if len(img.shape) == 2:
             img = np.stack([img] * 3, 2)
-
+        
+        # Apply augmentations if augmenter is provided
+        if self.augmenter is not None:
+            img = self.augmenter.augment(img)
+            
         flip = np.random.choice(2)*2-1
         img = img[:, ::flip, :]
         img = (img - 127.5) / 128.0
         img = img.transpose(2, 0, 1)
         img = torch.from_numpy(img).float()
-        
-        # Apply augmentations if augmenter is provided
-        if self.augmenter is not None:
-            img = self.augmenter.augment(img)
 
         return img, target
 
