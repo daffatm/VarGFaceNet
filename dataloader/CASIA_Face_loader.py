@@ -3,6 +3,7 @@ import imageio
 import os
 from sklearn import preprocessing
 import torch
+from dataloader.augmenter import augmenter
 #ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 import sys
@@ -36,6 +37,10 @@ class CASIA_Face():
         img = (img - 127.5) / 128.0
         img = img.transpose(2, 0, 1)
         img = torch.from_numpy(img).float()
+        
+        # Apply augmentations if augmenter is provided
+        if self.augmenter is not None:
+            img = self.augmenter.augment(img)
 
         return img, target
 
