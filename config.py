@@ -1,10 +1,10 @@
-BATCH_SIZE = 512
+BATCH_SIZE = 256
 SAVE_FREQ = 1
-TEST_FREQ = 6
-TOTAL_EPOCH = 24
+TEST_FREQ = 2
+TOTAL_EPOCH = 70
 
 RESUME = ''
-SAVE_DIR = '../drive/MyDrive/Face Recognition/vargfacenet/model'
+SAVE_DIR = '../drive/MyDrive/Face Recognition/vargfacenet/model/AdaFace'
 MODEL_PRE = 'CASIA_VarGFaceNet_'
 
 CASIA_DATA_DIR = '/content/casia-112x112'

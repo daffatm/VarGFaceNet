@@ -65,7 +65,7 @@ if __name__ == '__main__':
                                 m=0.4,
                                 h=0.333,
                                 s=64.,
-                                t_alpha=1.0).cuda()
+                                t_alpha=0.01).cuda()
 
 
     if torch.cuda.device_count() > 1:
@@ -87,9 +87,9 @@ if __name__ == '__main__':
     optimizer = optim.SGD([
         {'params': net.parameters(), 'weight_decay': 5e-4},
         {'params': lmcl_loss.parameters(), 'weight_decay': 5e-4}
-    ], lr=0.1, momentum=0.9, nesterov=True)
+    ], lr=0.01, momentum=0.9, nesterov=True)
 
-    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[10, 18, 22], gamma=0.1)
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[40, 50, 60], gamma=0.1)
 
     best_acc = 0.0
     best_epoch = 0
