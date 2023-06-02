@@ -11,10 +11,10 @@ import sys
 sys.path.append("..")
 
 class CASIA_Face():
-    def __init__(self, root):
+    def __init__(self, root, augmenter=None):
         self.image_list = []
         self.label_list = []
-        self.augmenter = Augmenter(0.2, 0.2, 0.2)
+        self.augmenter = augmenter # Augmenter(0.2, 0.2, 0.2)
 
         for r, _, files in os.walk(root):
             for f in files:
@@ -34,10 +34,11 @@ class CASIA_Face():
         if len(img.shape) == 2:
             img = np.stack([img] * 3, 2)
 
-        img = ToPILImage()(img)
         # Apply augmentations if augmenter is provided
-        img = self.augmenter.augment(img)
-        img = np.array(img)
+        if self.augmenter != None:
+            img = ToPILImage()(img)
+            img = self.augmenter.augment(img)
+            img = np.array(img)
 
         flip = np.random.choice(2)*2-1
         img = img[:, ::flip, :]

@@ -5,10 +5,12 @@ from torch.nn import DataParallel
 from datetime import datetime
 from config import BATCH_SIZE, SAVE_FREQ, RESUME, SAVE_DIR, TEST_FREQ, TOTAL_EPOCH, MODEL_PRE
 from config import CASIA_DATA_DIR, LFW_DATA_DIR
+from config import AUGMENTATION
 from core import model, head
 from core.utils import init_log
 from dataloader.CASIA_Face_loader import CASIA_Face
 from dataloader.LFW_loader import LFW
+from dataloader.augmenter import Augmenter
 from torch.optim import lr_scheduler
 from torchsummary import summary
 import torch.optim as optim
@@ -31,7 +33,9 @@ if __name__ == '__main__':
 
     # define trainloader and testloader
     print('defining casia dataloader...')
-    trainset = CASIA_Face(root=CASIA_DATA_DIR)
+    if AUGMENTATION:
+        trainset = CASIA_Face(root=CASIA_DATA_DIR, augmenter=Augmenter(0.2, 0.2, 0.2))
+    trainset = CASIA_Face(root=CASIA_DATA_DIR, augmenter=None)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=BATCH_SIZE,
                                               shuffle=True, num_workers=5, drop_last=False)
 
