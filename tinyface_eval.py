@@ -69,6 +69,7 @@ def infer(model, dataloader, use_flip_test=True, gpu=True):
                 flipped_embedding, flipped_ = model(fliped_images)
 
                 fused_feature = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
+                fused_feature = torch.from_numpy(fused_feature).float()
                 features.append(fused_feature)
             else:
                 features.append(embedding.data.cpu().numpy())
@@ -97,7 +98,7 @@ def load_model(resume, gpu=True):
     net.eval()
     return net
 
-def calc_accuracy(tinyface_test, probe, gallery, save_dir, do_norm=True):
+def calc_accuracy(tinyface_test, probe, gallery, save_dir, do_norm=False):
     if do_norm: 
         probe = probe / np.linalg.norm(probe, ord=2, axis=1).reshape(-1,1)
         gallery = gallery / np.linalg.norm(gallery, ord=2, axis=1).reshape(-1,1)

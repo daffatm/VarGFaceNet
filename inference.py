@@ -23,6 +23,8 @@ def face_verification(file1, file2, resume=None, gpu=False):
     if gpu:
         img1 = img1.cuda()
         img2 = img2.cuda()
+        
+    features = []
     
     # Ekstraksi embedding dari gambar pertama
     embedding, _ = net(img1)
@@ -32,6 +34,8 @@ def face_verification(file1, file2, resume=None, gpu=False):
 
     flipped_embedding, flipped_ = net(fliped_image)
     embedding1 = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
+    embedding1 = torch.from_numpy(embedding1).float()
+    features.append(embedding1)
 
     # Ekstraksi embedding dari gambar kedua
     embedding, _ = net(img2)
@@ -41,17 +45,20 @@ def face_verification(file1, file2, resume=None, gpu=False):
         
     flipped_embedding, flipped_ = net(fliped_image)
     embedding2 = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
+    embedding2 = torch.from_numpy(embedding2).float()
+    features.append(embedding2)
 
     # Menghitung jarak antara kedua embedding
-    distance = np.linalg.norm(embedding1 - embedding2)
+    # distance = np.linalg.norm(embedding1 - embedding2)
+    similarity = torch.cat(features) @ torch.cat(features).T
 
     # Menentukan threshold
-    threshold = 0.1     #90%
+    threshold = 0.6     #60% kemiripan
 
-    print(f"Jarak Embedding: {distance}")
+    print(f"Jarak Embedding: {similarity[0][1]}")
 
     # Mengecek apakah jarak kurang dari threshold atau tidak
-    if distance < threshold:
+    if similarity[0][1] > threshold:
         print("Gambar tersebut adalah gambar dari orang yang sama")
     else:
         print("Gambar tersebut adalah gambar dari orang yang berbeda")
@@ -84,6 +91,7 @@ def inference(file, speed_mem_eval=False, resume=None, gpu=False):
 
                 flipped_embedding, flipped_ = net(fliped_image)
                 embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
+                embedding = torch.from_numpy(embedding).float()
                 
         print(prof.key_averages(group_by_input_shape=True).table(sort_by="cpu_memory_usage", row_limit=10))
     else:
@@ -95,5 +103,6 @@ def inference(file, speed_mem_eval=False, resume=None, gpu=False):
 
         flipped_embedding, flipped_ = net(fliped_image)
         embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
+        embedding = torch.from_numpy(embedding).float()
         
         return embedding
