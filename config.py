@@ -1,8 +1,8 @@
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 SAVE_FREQ = 1
-TEST_FREQ = 2
+TEST_FREQ = 5
 TOTAL_EPOCH = 70
-AUGMENTATION = True
+AUGMENTATION = False
 
 RESUME = ''
 SAVE_DIR = '../drive/MyDrive/Face Recognition/vargfacenet/model/AdaFace'

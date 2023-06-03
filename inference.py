@@ -34,7 +34,7 @@ def face_verification(file1, file2, resume=None, gpu=False):
 
     flipped_embedding, flipped_ = net(fliped_image)
     embedding1 = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-    embedding1 = torch.from_numpy(embedding1).float()
+    embedding1 = torch.tensor(embedding1).float()
     features.append(embedding1)
 
     # Ekstraksi embedding dari gambar kedua
@@ -45,7 +45,7 @@ def face_verification(file1, file2, resume=None, gpu=False):
         
     flipped_embedding, flipped_ = net(fliped_image)
     embedding2 = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-    embedding2 = torch.from_numpy(embedding2).float()
+    embedding2 = torch.tensor(embedding2).float()
     features.append(embedding2)
 
     # Menghitung jarak antara kedua embedding
@@ -91,7 +91,7 @@ def inference(file, speed_mem_eval=False, resume=None, gpu=False):
 
                 flipped_embedding, flipped_ = net(fliped_image)
                 embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-                embedding = torch.from_numpy(embedding).float()
+                embedding = torch.tensor(embedding).float()
                 
         print(prof.key_averages(group_by_input_shape=True).table(sort_by="cpu_memory_usage", row_limit=10))
     else:
@@ -103,6 +103,6 @@ def inference(file, speed_mem_eval=False, resume=None, gpu=False):
 
         flipped_embedding, flipped_ = net(fliped_image)
         embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-        embedding = torch.from_numpy(embedding).float()
+        embedding = torch.tensor(embedding).float()
         
         return embedding

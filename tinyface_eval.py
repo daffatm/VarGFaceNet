@@ -69,7 +69,7 @@ def infer(model, dataloader, use_flip_test=True, gpu=True):
                 flipped_embedding, flipped_ = model(fliped_images)
 
                 fused_feature = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-                fused_feature = torch.from_numpy(fused_feature).float()
+                fused_feature = torch.tensor(fused_feature).float()
                 features.append(fused_feature)
             else:
                 features.append(embedding.data.cpu().numpy())
