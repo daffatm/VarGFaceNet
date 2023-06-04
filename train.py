@@ -93,14 +93,15 @@ if __name__ == '__main__':
         {'params': lmcl_loss.parameters(), 'weight_decay': 5e-4}
     ], lr=0.01, momentum=0.9, nesterov=True)
 
-    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[40, 50, 60], gamma=0.1)
+    scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=[10, 18, 22], gamma=0.1)
 
     best_acc = 0.0
     best_epoch = 0
     for epoch in range(start_epoch, TOTAL_EPOCH+1):
         # exp_lr_scheduler.step()
         # optimizer4nn.step()
-        # optimizer4center.step() 
+        # optimizer4center.step()
+        # optimizer.step()
         scheduler.step()
              
         # train model

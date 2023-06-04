@@ -29,7 +29,7 @@ def extract_deep_feature(embedding, _, flipped_embedding, flipped_):
 
 def preprocess_img(img_file):
     img = cv2.imread(img_file, cv2.IMREAD_UNCHANGED)
-    img = np.resize(img, (112, 112))
+    # img = np.resize(img, (112, 112))
     if len(img.shape) == 2:
         img = np.stack([img] * 3, 2)
     img = (img - 127.5) / 128.0

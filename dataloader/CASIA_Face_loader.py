@@ -29,7 +29,6 @@ class CASIA_Face():
         img_path = self.image_list[index]
         target = self.label_list[index]
         img = imageio.imread(img_path)
-        # img = np.resize(img, (112, 112))
 
         if len(img.shape) == 2:
             img = np.stack([img] * 3, 2)

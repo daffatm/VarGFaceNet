@@ -14,11 +14,9 @@ class LFW():
 
     def __getitem__(self, index):
         imgl = imageio.imread(self.imgl_list[index])
-        imgl = np.resize(imgl, (112, 112))
         if len(imgl.shape) == 2:
             imgl = np.stack([imgl] * 3, 2)
         imgr = imageio.imread(self.imgr_list[index])
-        imgr = np.resize(imgr, (112, 112))
         if len(imgr.shape) == 2:
             imgr = np.stack([imgr] * 3, 2)
 

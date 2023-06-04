@@ -4,8 +4,7 @@ from core import model
 from data_utils import extract_deep_feature, preprocess_img
 from torch.profiler import profile, record_function, ProfilerActivity
 
-@torch.no_grad()
-def face_verification(file1, file2, resume=None, gpu=False):
+def load_model(resume=None, gpu=False):
     net = model.VarGFaceNet()
     if gpu:
         net = net.cuda()
@@ -13,48 +12,45 @@ def face_verification(file1, file2, resume=None, gpu=False):
         ckpt = torch.load(resume, map_location='cpu')
         net.load_state_dict(ckpt['net_state_dict'])
     net.eval()
+    
+    return net
 
-    # load img1
-    img1 = preprocess_img(file1)
+@torch.no_grad()
+def extract_emb(net, img, gpu, flip=True):
+    embedding, _ = net(img)
+    
+    if flip:
+        fliped_image = torch.flip(img, dims=[3])
+        if gpu:
+            fliped_image = fliped_image.cuda()
 
-    # load img2
-    img2 = preprocess_img(file2)
+        flipped_embedding, flipped_ = net(fliped_image)
+        embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
+        embedding = torch.from_numpy(embedding).float()
+    
+    return embedding
 
-    if gpu:
-        img1 = img1.cuda()
-        img2 = img2.cuda()
+@torch.no_grad()
+def face_verification(file1, file2, resume=None, gpu=False):
+    net = load_model(resume, gpu)
+    embedding, _ = net(torch.randn(2,3,112,112))
         
     features = []
-    
-    # Ekstraksi embedding dari gambar pertama
-    embedding, _ = net(img1)
-    fliped_image = torch.flip(img1, dims=[3])
-    if gpu:
-        fliped_image = fliped_image.cuda()
+    imgs = [file1, file2]
+    # Ekstrak embedding
+    for img in imgs:
+        # load 
+        img = preprocess_img(img)
+        if gpu:
+            img = img.cuda()
 
-    flipped_embedding, flipped_ = net(fliped_image)
-    embedding1 = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-    embedding1 = torch.tensor(embedding1).float()
-    features.append(embedding1)
+        embedding = extract_emb(net, img, gpu) 
+        features.append(embedding)
 
-    # Ekstraksi embedding dari gambar kedua
-    embedding, _ = net(img2)
-    fliped_image = torch.flip(img2, dims=[3])
-    if gpu:
-        fliped_image = fliped_image.cuda()
-        
-    flipped_embedding, flipped_ = net(fliped_image)
-    embedding2 = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-    embedding2 = torch.tensor(embedding2).float()
-    features.append(embedding2)
-
-    # Menghitung jarak antara kedua embedding
-    # distance = np.linalg.norm(embedding1 - embedding2)
+    # Mengitung score kemiripan
     similarity = torch.cat(features) @ torch.cat(features).T
-
     # Menentukan threshold
     threshold = 0.6     #60% kemiripan
-
     print(f"Jarak Embedding: {similarity[0][1]}")
 
     # Mengecek apakah jarak kurang dari threshold atau tidak
@@ -65,44 +61,23 @@ def face_verification(file1, file2, resume=None, gpu=False):
 
 @torch.no_grad()
 def inference(file, speed_mem_eval=False, resume=None, gpu=False):
-    net = model.VarGFaceNet()
-    if gpu:
-        net = net.cuda()
-    if resume:
-        ckpt = torch.load(resume, map_location='cpu')
-        net.load_state_dict(ckpt['net_state_dict'])
-    net.eval()
+    net = load_model(resume, gpu)
+    embedding, _ = net(torch.randn(2,3,112,112))
 
     # load img
-    img1 = preprocess_img(file)
-
+    img = preprocess_img(file)
     if gpu:
-        img1 = img1.cuda()
+        img = img.cuda()
         
     if speed_mem_eval:
         with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
                     record_shapes=True, profile_memory=True, with_flops=True) as prof:
-            with record_function("inference"):
+            with record_function("extract_emb"):
                 # Ekstraksi embedding
-                embedding, _ = net(img1)
-                fliped_image = torch.flip(img1, dims=[3])
-                if gpu:
-                    fliped_image = fliped_image.cuda()
-
-                flipped_embedding, flipped_ = net(fliped_image)
-                embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-                embedding = torch.tensor(embedding).float()
+                embedding = extract_emb(net, img, gpu, flip=False) 
                 
         print(prof.key_averages(group_by_input_shape=True).table(sort_by="cpu_memory_usage", row_limit=10))
     else:
         # Ekstraksi embedding
-        embedding, _ = net(img1)
-        fliped_image = torch.flip(img1, dims=[3])
-        if gpu:
-            fliped_image = fliped_image.cuda()
-
-        flipped_embedding, flipped_ = net(fliped_image)
-        embedding = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-        embedding = torch.tensor(embedding).float()
-        
+        embedding = extract_emb(net, img, gpu) 
         return embedding

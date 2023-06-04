@@ -31,10 +31,8 @@ class ListDataset(Dataset):
         # Load Image
         image_path = self.img_list[idx]
         img = cv2.imread(image_path)
-        # img = img[:, :, :3]
-        img = np.resize(img, (112, 112))
-        if len(img.shape) == 2:
-            img = np.stack([img] * 3, 2)
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = img[:, :, :3]
 
         # To Tensor
         img = Image.fromarray(img)
@@ -69,10 +67,10 @@ def infer(model, dataloader, use_flip_test=True, gpu=True):
                 flipped_embedding, flipped_ = model(fliped_images)
 
                 fused_feature = extract_deep_feature(embedding, _, flipped_embedding, flipped_)
-                fused_feature = torch.tensor(fused_feature).float()
+                fused_feature = torch.from_numpy(fused_feature).float()
                 features.append(fused_feature)
             else:
-                features.append(embedding.data.cpu().numpy())
+                features.append(embedding)
 
     features = np.concatenate(features, axis=0)
     return features
@@ -98,7 +96,7 @@ def load_model(resume, gpu=True):
     net.eval()
     return net
 
-def calc_accuracy(tinyface_test, probe, gallery, save_dir, do_norm=False):
+def calc_accuracy(tinyface_test, probe, gallery, save_dir, do_norm=True):
     if do_norm: 
         probe = probe / np.linalg.norm(probe, ord=2, axis=1).reshape(-1,1)
         gallery = gallery / np.linalg.norm(gallery, ord=2, axis=1).reshape(-1,1)
