@@ -33,7 +33,10 @@ def extract_emb(net, img, gpu, flip=True):
 @torch.no_grad()
 def face_verification(file1, file2, resume=None, gpu=False):
     net = load_model(resume, gpu)
-    embedding, _ = net(torch.randn(2,3,112,112))
+    if gpu:
+        embedding, _ = net(torch.randn(2,3,112,112).cuda())
+    else:
+        embedding, _ = net(torch.randn(2,3,112,112))
         
     features = []
     imgs = [file1, file2]
@@ -60,24 +63,18 @@ def face_verification(file1, file2, resume=None, gpu=False):
         print("Gambar tersebut adalah gambar dari orang yang berbeda")
 
 @torch.no_grad()
-def inference(file, speed_mem_eval=False, resume=None, gpu=False):
+def inference(file, resume=None, gpu=False):
     net = load_model(resume, gpu)
-    embedding, _ = net(torch.randn(2,3,112,112))
+    if gpu:
+        embedding, _ = net(torch.randn(2,3,112,112).cuda())
+    else:
+        embedding, _ = net(torch.randn(2,3,112,112))
 
     # load img
     img = preprocess_img(file)
     if gpu:
         img = img.cuda()
         
-    if speed_mem_eval:
-        with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-                    record_shapes=True, profile_memory=True, with_flops=True) as prof:
-            with record_function("extract_emb"):
-                # Ekstraksi embedding
-                embedding = extract_emb(net, img, gpu, flip=False) 
-                
-        print(prof.key_averages(group_by_input_shape=True).table(sort_by="cpu_memory_usage", row_limit=10))
-    else:
-        # Ekstraksi embedding
-        embedding = extract_emb(net, img, gpu) 
-        return embedding
+    # Ekstraksi embedding
+    embedding = extract_emb(net, img, gpu) 
+    return embedding
