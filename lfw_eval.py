@@ -58,6 +58,7 @@ def getThreshold(scores, flags, thrNum):
 
 def evaluation_10_fold(root='./result/pytorch_result.mat'):
     ACCs = np.zeros(10)
+    thresholds = np.zeros(10)
     result = scipy.io.loadmat(root)
     for i in range(10):
         fold = result['fold']
@@ -86,10 +87,10 @@ def evaluation_10_fold(root='./result/pytorch_result.mat'):
         # if len(scores)==0 : 
         #     continue;
 
-        threshold = getThreshold(scores[valFold[0]], flags[valFold[0]], 10000)
-        ACCs[i] = getAccuracy(scores[testFold[0]], flags[testFold[0]], threshold)
+        thresholds[i] = getThreshold(scores[valFold[0]], flags[valFold[0]], 10000)
+        ACCs[i] = getAccuracy(scores[testFold[0]], flags[testFold[0]], thresholds[i])
         
-    return ACCs
+    return ACCs, thresholds
 
 @torch.no_grad()
 def getFeatureFromTorch(lfw_dir, name, feature_save_dir, resume=None, gpu=True):
